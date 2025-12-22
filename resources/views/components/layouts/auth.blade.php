@@ -16,7 +16,7 @@
 
     @livewireStyles(['nonce' => $nonce])
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @fluxAppearance
+    @fluxAppearance(['nonce' => $nonce])
 </head>
 
 <body class="min-h-screen bg-neutral-100 antialiased dark:bg-linear-to-b dark:from-neutral-950 dark:to-neutral-900">
@@ -40,7 +40,7 @@
     </div>
 
     @livewireScripts(['nonce' => $nonce])
-    @fluxScripts
+    @fluxScripts(['nonce' => $nonce])
     <script nonce="{{ $nonce }}" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     @stack('scripts')
 </body>
