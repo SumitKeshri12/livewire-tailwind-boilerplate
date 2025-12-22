@@ -1,0 +1,135 @@
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
+@import '../../vendor/power-components/livewire-powergrid/resources/css/tailwind4.css';
+@import "flatpickr/dist/flatpickr.min.css";
+@import "quill/dist/quill.snow.css";
+@import "./quill-editor.css";
+/* @import "tom-select/dist/scss/tom-select.bootstrap5.scss"; */
+/* @import "slim-select/dist/slimselect.css"; */
+@import '../css/components/dropzone.css';
+@import 'sweetalert2/dist/sweetalert2.min.css';
+
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
+@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+@source '../../vendor/power-components/livewire-powergrid/src/Themes/Tailwind.php';
+@source '../../vendor/power-components/livewire-powergrid/resources/views/**/*.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-zinc-50: #fafafa;
+    --color-zinc-100: #f5f5f5;
+    --color-zinc-200: #e5e5e5;
+    --color-zinc-300: #d4d4d4;
+    --color-zinc-400: #a3a3a3;
+    --color-zinc-500: #737373;
+    --color-zinc-600: #525252;
+    --color-zinc-700: #404040;
+    --color-zinc-800: #262626;
+    --color-zinc-900: #171717;
+    --color-zinc-950: #0a0a0a;
+
+    --color-accent: #000000;
+    --color-accent-content: var(--color-neutral-800);
+    --color-accent-foreground: var(--color-white);
+
+}
+
+@layer theme {
+    .dark {
+        --color-accent: var(--color-white);
+        --color-accent-content: var(--color-white);
+        --color-accent-foreground: var(--color-neutral-800);
+    }
+}
+
+@layer base {
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+}
+
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply  !mb-0 !leading-tight;
+}
+
+input:focus[data-flux-control],
+textarea:focus[data-flux-control],
+select:focus[data-flux-control] {
+    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+}
+
+/* \[:where(&)\]:size-4 {
+    @apply size-4;
+} */
+
+/* Custom styling to remove red borders from form fields with validation errors */
+/* Override Flux UI error styling while keeping error messages */
+[data-flux-field] [data-flux-control]:invalid,
+[data-flux-field] [data-flux-control][aria-invalid="true"],
+[data-flux-field] [data-flux-control].error,
+[data-flux-field] [data-flux-control][data-error],
+[data-flux-field] [data-flux-control]:has-error {
+    border-color: rgb(209 213 219) !important; /* gray-300 */
+    @apply dark:border-gray-600;
+    @apply focus:border-black focus:ring-black;
+}
+
+/* Remove red border from input fields with errors */
+input[data-flux-control]:invalid,
+input[data-flux-control][aria-invalid="true"],
+input[data-flux-control].error,
+input[data-flux-control][data-error] {
+    border-color: rgb(209 213 219) !important; /* gray-300 */
+    @apply dark:border-gray-600;
+    @apply focus:border-black focus:ring-black;
+}
+
+/* Remove red border from select fields with errors */
+select[data-flux-control]:invalid,
+select[data-flux-control][aria-invalid="true"],
+select[data-flux-control].error,
+select[data-flux-control][data-error] {
+    border-color: rgb(209 213 219) !important; /* gray-300 */
+    @apply dark:border-gray-600;
+    @apply focus:border-black focus:ring-black;
+}
+
+/* Remove red border from textarea fields with errors */
+textarea[data-flux-control]:invalid,
+textarea[data-flux-control][aria-invalid="true"],
+textarea[data-flux-control].error,
+textarea[data-flux-control][data-error] {
+    border-color: rgb(209 213 219) !important; /* gray-300 */
+    @apply dark:border-gray-600;
+    @apply focus:border-black focus:ring-black;
+}
+
+/* Remove red border from file input fields with errors */
+input[type="file"][data-flux-control]:invalid,
+input[type="file"][data-flux-control][aria-invalid="true"],
+input[type="file"][data-flux-control].error,
+input[type="file"][data-flux-control][data-error] {
+    border-color: rgb(209 213 219) !important; /* gray-300 */
+    @apply dark:border-gray-600;
+    @apply focus:border-black focus:ring-black;
+}
+
+/* Import PowerGrid responsive styles */
+@import './powergrid-responsive.css';
+
+
