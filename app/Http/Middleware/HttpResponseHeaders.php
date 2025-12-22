@@ -18,12 +18,19 @@ class HttpResponseHeaders
     {
         // Generate CSP Nonce (VAPT Enhancement)
         $nonce = base64_encode(random_bytes(16));
+        
+        // In local dev, we don't want the nonce to change on every request because it breaks wire:navigate
+        // (scripts get reloaded because the nonce attribute changes).
+        $shouldUseNonce = !App::environment('local');
+        $viewNonce = $shouldUseNonce ? $nonce : '';
 
         // Share with all views so we can use it in Blade (e.g., <script nonce="{{ $nonce }}">)
-        \Illuminate\Support\Facades\View::share('nonce', $nonce);
+        \Illuminate\Support\Facades\View::share('nonce', $viewNonce);
 
         // Store nonce in request attributes for Livewire access
-        $request->attributes->set('csp_nonce', $nonce);
+        if ($shouldUseNonce) {
+            $request->attributes->set('csp_nonce', $nonce);
+        }
 
         $response = $next($request);
 
@@ -49,7 +56,8 @@ class HttpResponseHeaders
         // In Production/UAT, the nonce is present, so 'unsafe-inline' is rightfully ignored for stricter security.
         $nonceDirective = App::environment('local') ? '' : "'nonce-{$nonce}'";
 
-        $csp = "default-src 'self'; upgrade-insecure-requests; " .
+        $upgradeDirective = App::environment('local') ? '' : 'upgrade-insecure-requests;';
+        $csp = "default-src 'self'; {$upgradeDirective} " .
             "script-src 'self' {$nonceDirective} 'unsafe-inline' 'unsafe-eval' https://code.jquery.com https://unpkg.com https://www.google.com https://www.gstatic.com; " .
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://unpkg.com; " .
             "font-src 'self' data: https://fonts.bunny.net; " .
