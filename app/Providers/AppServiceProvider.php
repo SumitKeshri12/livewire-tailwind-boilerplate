@@ -80,6 +80,10 @@ class AppServiceProvider extends ServiceProvider
             'edit-emailtemplates',
             'delete-emailtemplates',
         ];
+        if (App::isProduction()) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         foreach ($permissions ?? [] as $permission) {
             Gate::define($permission, function ($user) use ($permission) {
                 return $user->hasPermission($permission, $user->role_id);

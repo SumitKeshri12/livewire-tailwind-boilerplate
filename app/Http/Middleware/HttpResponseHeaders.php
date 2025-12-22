@@ -49,7 +49,7 @@ class HttpResponseHeaders
         // In Production/UAT, the nonce is present, so 'unsafe-inline' is rightfully ignored for stricter security.
         $nonceDirective = App::environment('local') ? '' : "'nonce-{$nonce}'";
 
-        $csp = "default-src 'self'; " .
+        $csp = "default-src 'self'; upgrade-insecure-requests; " .
             "script-src 'self' {$nonceDirective} 'unsafe-inline' 'unsafe-eval' https://code.jquery.com https://unpkg.com https://www.google.com https://www.gstatic.com; " .
             "style-src 'self' {$nonceDirective} 'unsafe-inline' https://fonts.bunny.net https://unpkg.com; " .
             "font-src 'self' data: https://fonts.bunny.net; " .

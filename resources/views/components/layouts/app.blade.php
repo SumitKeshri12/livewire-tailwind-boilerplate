@@ -34,7 +34,7 @@
 
     {{-- Flux Scripts --}}
     @livewireScripts(['nonce' => $nonce])
-    @fluxScripts
+    @fluxScripts(['nonce' => $nonce])
 
     <script nonce="{{ $nonce }}" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     @stack('scripts')
