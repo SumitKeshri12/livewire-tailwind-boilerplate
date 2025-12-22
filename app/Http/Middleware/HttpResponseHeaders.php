@@ -51,7 +51,7 @@ class HttpResponseHeaders
 
         $csp = "default-src 'self'; upgrade-insecure-requests; " .
             "script-src 'self' {$nonceDirective} 'unsafe-inline' 'unsafe-eval' https://code.jquery.com https://unpkg.com https://www.google.com https://www.gstatic.com; " .
-            "style-src 'self' {$nonceDirective} 'unsafe-inline' https://fonts.bunny.net https://unpkg.com; " .
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://unpkg.com; " .
             "font-src 'self' data: https://fonts.bunny.net; " .
             "img-src 'self' data: https://fluxui.dev; " .
             "connect-src 'self' https://www.google.com https://www.gstatic.com; " .

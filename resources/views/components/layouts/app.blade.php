@@ -18,7 +18,7 @@
     @livewireStyles(['nonce' => $nonce])
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    @fluxAppearance
+    @fluxAppearance(['nonce' => $nonce])
 
     @stack('styles')
 </head>
