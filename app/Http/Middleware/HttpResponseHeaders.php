@@ -72,10 +72,15 @@ class HttpResponseHeaders
             }
 
             // Content Security Policy (CSP)
+            // SECURITY TRADE-OFF: Livewire/Alpine.js Architecture Requirements
+            // - 'unsafe-eval': REQUIRED by Alpine.js for x-directive parsing (no alternative)
+            // - 'unsafe-inline': Mostly neutralized by nonce in production; needed for inline handlers
+            // This is a documented limitation of the Livewire stack.
+            // Mitigation: Strict input sanitization + nonce + other security layers
             $nonceDirective = "'nonce-{$nonce}'";
             $csp = "default-src 'self'; " .
                 "script-src 'self' {$nonceDirective} 'unsafe-inline' 'unsafe-eval' https://code.jquery.com https://unpkg.com https://www.google.com https://www.gstatic.com; " .
-                "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://unpkg.com; " .
+                "style-src 'self' {$nonceDirective} 'unsafe-inline' https://fonts.bunny.net https://unpkg.com; " .
                 "font-src 'self' data: https://fonts.bunny.net; " .
                 "img-src 'self' data: https://fluxui.dev; " .
                 "connect-src 'self' https://www.google.com https://www.gstatic.com; " .
