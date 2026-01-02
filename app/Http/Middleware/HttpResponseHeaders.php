@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
 class HttpResponseHeaders
@@ -12,58 +13,86 @@ class HttpResponseHeaders
     /**
      * Handle an incoming request.
      *
-     * @param Closure(Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse) $next
+     * @param Closure(Request): Response $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // 1. Generate or Retrieve CSP Nonce
-        // Default to a new random nonce
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Generate CSP Nonce (PER REQUEST — CSP spec compliant)
+        |--------------------------------------------------------------------------
+        | - MUST be unique per response
+        | - Never persisted in session
+        | - Prevents XSS replay attacks
+        */
         $nonce = base64_encode(random_bytes(16));
 
-        // In Production/UAT, we MUST use a persistent nonce per session.
-        // If the nonce changes on every request, Livewire's 'wire:navigate' will see script tags 
-        // as "new" (different nonce attribute) and re-execute them, causing Flux UI to crash 
-        // with "CustomElementRegistry: name already used".
-        if (! App::environment('local') && $request->hasSession()) {
-            try {
-                $sessionNonce = $request->session()->get('csp_nonce_val');
-                if ($sessionNonce) {
-                    $nonce = $sessionNonce;
-                } else {
-                    $request->session()->put('csp_nonce_val', $nonce);
-                }
-            } catch (\Exception $e) {
-                // Fallback to random nonce if session fails
-            }
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Environment Strategy
+        |--------------------------------------------------------------------------
+        | Local:
+        | - CSP disabled to avoid Vite HMR / Livewire dev friction
+        |
+        | Non-Local (UAT / PROD):
+        | - CSP enabled
+        | - Nonce injected
+        */
+        $isLocal = App::environment('local');
+        $shouldApplyCsp = ! $isLocal;
 
-        // 2. Prepare View Variables
-        // In local dev, we disable the nonce to prevent Hot Module Replacement (HMR) issues.
-        $shouldUseNonce = !App::environment('local');
-        $viewNonce = $shouldUseNonce ? $nonce : '';
+        // Share nonce with Blade views
+        View::share('nonce', $shouldApplyCsp ? $nonce : null);
 
-        // Share with all views (e.g. for @livewireScripts(['nonce' => $nonce]))
-        \Illuminate\Support\Facades\View::share('nonce', $viewNonce);
-
-        // Store in request attributes for Livewire access if needed
-        if ($shouldUseNonce) {
+        // Make nonce available via request attributes if needed
+        if ($shouldApplyCsp) {
             $request->attributes->set('csp_nonce', $nonce);
         }
 
+        /** @var Response $response */
         $response = $next($request);
 
-        // 3. Set Security Headers (only in Non-Local environments)
-        if ($shouldUseNonce) {
-            // Remove Information Disclosure Headers
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Security Headers (Non-Local Only)
+        |--------------------------------------------------------------------------
+        */
+        if ($shouldApplyCsp) {
+            // Remove information disclosure
             $response->headers->remove('X-Powered-By');
 
-            // Basic Security Headers
+            // Clickjacking protection
             $response->headers->set('X-Frame-Options', 'SAMEORIGIN', true);
+
+            // MIME sniffing protection
             $response->headers->set('X-Content-Type-Options', 'nosniff', true);
 
-            // HSTS (Strict Transport Security)
+            // Referrer policy
+            $response->headers->set(
+                'Referrer-Policy',
+                'strict-origin-when-cross-origin',
+                true
+            );
+
+            // Permissions policy
+            $response->headers->set(
+                'Permissions-Policy',
+                'geolocation=(self)',
+                true
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | HSTS (HTTPS Only)
+            |--------------------------------------------------------------------------
+            */
             $appUrlScheme = parse_url(config('app.url'), PHP_URL_SCHEME);
-            if (App::isProduction() || $request->isSecure() || $appUrlScheme === 'https') {
+
+            if (
+                App::isProduction()
+                || $request->isSecure()
+                || $appUrlScheme === 'https'
+            ) {
                 $response->headers->set(
                     'Strict-Transport-Security',
                     'max-age=31536000; includeSubDomains',
@@ -71,32 +100,63 @@ class HttpResponseHeaders
                 );
             }
 
-            // Content Security Policy (CSP)
-            // SECURITY TRADE-OFF: Livewire/Alpine.js Architecture Requirements
-            // - 'unsafe-eval': REQUIRED by Alpine.js for x-directive parsing (no alternative)
-            // - 'unsafe-inline': Mostly neutralized by nonce in production; needed for inline handlers
-            // This is a documented limitation of the Livewire stack.
-            // Mitigation: Strict input sanitization + nonce + other security layers
-            $nonceDirective = "'nonce-{$nonce}'";
-            $csp = "default-src 'self'; " .
-                "script-src 'self' {$nonceDirective} 'unsafe-inline' 'unsafe-eval' https://code.jquery.com https://unpkg.com https://www.google.com https://www.gstatic.com; " .
-                "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://unpkg.com; " .
-                "font-src 'self' data: https://fonts.bunny.net; " .
-                "img-src 'self' data: https://fluxui.dev; " .
-                "connect-src 'self' https://www.google.com https://www.gstatic.com; " .
-                "base-uri 'self'; " .
-                "frame-ancestors 'none'; " .
-                "frame-src 'self' https://www.google.com; " .
-                "form-action 'self';";
+            /*
+            |--------------------------------------------------------------------------
+            | 4. Content Security Policy (Livewire + Alpine + Flux Safe)
+            |--------------------------------------------------------------------------
+            |
+            | REQUIRED:
+            | - 'unsafe-eval' → Alpine.js runtime requirement
+            | - nonce         → Inline boot scripts (Livewire, Flux)
+            |
+            | IMPORTANT:
+            | - NO 'unsafe-inline' → keeps nonce effective
+            | - Inline scripts must be guarded to avoid re-execution
+            |
+            */
+            $csp = implode('; ', [
+                "default-src 'self'",
+
+                "script-src
+                    'self'
+                    'nonce-{$nonce}'
+                    'unsafe-eval'
+                    https://code.jquery.com
+                    https://unpkg.com
+                    https://www.google.com
+                    https://www.gstatic.com
+                ",
+
+                "style-src
+                    'self'
+                    'unsafe-inline'
+                    https://fonts.bunny.net
+                    https://unpkg.com
+                ",
+
+                "font-src
+                    'self'
+                    data:
+                    https://fonts.bunny.net
+                ",
+
+                "img-src
+                    'self'
+                    data:
+                    https://fluxui.dev
+                ",
+
+                "connect-src
+                    'self'
+                ",
+
+                "base-uri 'self'",
+                "form-action 'self'",
+                "frame-ancestors 'none'",
+                "frame-src 'self' https://www.google.com",
+            ]);
 
             $response->headers->set('Content-Security-Policy', $csp, true);
-
-            $response->headers->set(
-                'Permissions-Policy',
-                'geolocation=(self)',
-                true
-            );
-            $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin', true);
         }
 
         return $response;
