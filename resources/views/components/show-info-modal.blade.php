@@ -1,25 +1,33 @@
-@props(['modalTitle' => '', 'eventName', 'showSaveButton' => true, 'saveButtonText' => 'Save', 'showCancelButton' => true, 'cancelButtonText' => 'Cancel'])
+@props([
+    'modalTitle' => '',
+    'eventName',
+    'showSaveButton' => true,
+    'saveButtonText' => 'Save',
+    'showCancelButton' => true,
+    'cancelButtonText' => 'Cancel',
+])
 
-<div wire:ignore.self id="{{ $eventName }}" tabindex="-1" aria-labelledby="{{ $eventName }}" aria-hidden="true"
-    class="fixed inset-0 z-50 hidden">
+<div x-data wire:ignore.self id="{{ $eventName }}" tabindex="-1" aria-labelledby="{{ $eventName }}"
+    aria-hidden="true" class="fixed inset-0 z-50 hidden">
     <!-- Background Overlay -->
     <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity duration-300"
-        onclick="window.dispatchEvent(new CustomEvent('hide-modal', { detail: { id: '#{{ $eventName }}' } }))">
+        @click="$dispatch('hide-modal', { id: '#{{ $eventName }}' })">
     </div>
 
     <!-- Centered Modal Container -->
-    <div class="fixed inset-0 flex items-center justify-center p-4" 
-         onclick="window.dispatchEvent(new CustomEvent('hide-modal', { detail: { id: '#{{ $eventName }}' } }))">
+    <div class="fixed inset-0 flex items-center justify-center p-4"
+        @click="$dispatch('hide-modal', { id: '#{{ $eventName }}' })">
         <div class="relative w-full max-w-3xl mx-auto bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl transition-transform duration-300 scale-100"
-            role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+            role="dialog" aria-modal="true" @click.stop>
             <!-- Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <flux:heading size="lg" class="text-gray-900 dark:text-gray-100">
                     {{ $modalTitle }}
                 </flux:heading>
 
-                <flux:button variant="ghost" size="sm" class="rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-                    onclick="window.dispatchEvent(new CustomEvent('hide-modal', { detail: { id: '#{{ $eventName }}' } }))">
+                <flux:button variant="ghost" size="sm"
+                    class="rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                    @click="$dispatch('hide-modal', { id: '#{{ $eventName }}' })">
                     <flux:icon.x-mark class="w-5 h-5" />
                 </flux:button>
             </div>
@@ -33,16 +41,13 @@
 
             <!-- Footer -->
             <div class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-                @if($showCancelButton)
-                <flux:button
-                    variant="filled"
-                    onclick="window.dispatchEvent(new CustomEvent('hide-modal', { detail: { id: '#{{ $eventName }}' } }))"
-                >
-                    {{ $cancelButtonText }}
-                </flux:button>
+                @if ($showCancelButton)
+                    <flux:button variant="filled" @click="$dispatch('hide-modal', { id: '#{{ $eventName }}' })">
+                        {{ $cancelButtonText }}
+                    </flux:button>
                 @endif
 
-                @if($showSaveButton)
+                @if ($showSaveButton)
                     <flux:button variant="primary">
                         {{ $saveButtonText }}
                     </flux:button>
